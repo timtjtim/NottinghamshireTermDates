@@ -53,7 +53,7 @@ def compute_holidays(terms: list[dict], half_terms: list[dict], year_data: dict)
     Compute holiday periods from the gaps between terms and from half-term entries.
 
     Holiday naming logic:
-    - Half terms within Autumn/Spring/Summer → "Half term"
+    - Half terms within Autumn/Spring/Summer → "<Term Name> Half term"
     - Gap between Autumn and Spring terms → "Christmas"
     - Gap between Spring and Summer terms → "Easter"
     - Gap after Summer term (before next year) → "Summer"
@@ -62,9 +62,10 @@ def compute_holidays(terms: list[dict], half_terms: list[dict], year_data: dict)
 
     # Half term holidays (explicitly listed on the page)
     for ht in half_terms:
+        term_name = ht["term_name"].split(" ")[0]
         holidays.append(
             {
-                "name": "Half term",
+                "name": f"{term_name} Half Term",
                 "start": ht["start"],
                 "end": ht["end"],
             }
