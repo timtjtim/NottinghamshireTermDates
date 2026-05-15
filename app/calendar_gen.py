@@ -45,6 +45,30 @@ def generate_ics(academic_years: list[dict]) -> str:
             event.add("transp", "TRANSPARENT")
             cal.add_component(event)
 
+    # Compute summer holidays from gaps between academic years
+    for i in range(len(academic_years) - 1):
+        current_year = academic_years[i]
+        next_year = academic_years[i + 1]
+
+        current_terms = [p for p in current_year["periods"] if p["type"] == "term"]
+        next_terms = [p for p in next_year["periods"] if p["type"] == "term"]
+
+        if current_terms and next_terms:
+            last_term = max(current_terms, key=lambda t: t["end"])
+            first_term = min(next_terms, key=lambda t: t["start"])
+
+            summer_start = last_term["end"] + timedelta(days=1)
+            summer_end = first_term["start"] - timedelta(days=1)
+
+            if summer_start <= summer_end:
+                event = Event()
+                event.add("summary", "School Holiday: Summer")
+                event.add("dtstart", summer_start)
+                event.add("dtend", summer_end + timedelta(days=1))
+                event.add("description", format_duration_description(summer_start, summer_end))
+                event.add("transp", "TRANSPARENT")
+                cal.add_component(event)
+
     return cal.to_ical().decode("utf-8")
 
 
