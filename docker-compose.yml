@@ -1,0 +1,10 @@
+services:
+  calendar:
+    build: .
+    ports:
+      - "8484:8080"
+    volumes:
+      - cache_data:/app/cache
+
+volumes:
+  cache_data:
