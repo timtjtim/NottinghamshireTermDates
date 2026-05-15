@@ -30,7 +30,7 @@ def generate_ics(academic_years: list[dict]) -> str:
             event.add("dtstart", term["start"])
             # ICS all-day events: DTEND is exclusive, so add 1 day
             event.add("dtend", term["end"] + timedelta(days=1))
-            event.add("description", format_duration_description(term["start"], term["end"], term.get("duration")))
+            event.add("description", format_duration_description(term["start"], term["end"]))
             event.add("transp", "TRANSPARENT")
             cal.add_component(event)
 
@@ -115,11 +115,8 @@ def classify_holiday_gap(current_term: dict, next_term: dict) -> str:
         return "Summer"
 
 
-def format_duration_description(start: date, end: date, duration_str: str | None = None) -> str:
+def format_duration_description(start: date, end: date) -> str:
     """Format the duration description for an event."""
-    if duration_str:
-        return f"Duration: {duration_str}"
-
     # Calculate duration
     total_days = (end - start).days + 1  # inclusive
     weeks = total_days // 7
