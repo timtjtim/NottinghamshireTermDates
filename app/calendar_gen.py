@@ -23,8 +23,10 @@ def generate_ics(academic_years: list[dict]) -> str:
 
         # Create term time events
         for term in terms:
+            # Extract season name from heading like "Autumn term 2025"
+            season = term["term_name"].split(" ")[0]
             event = Event()
-            event.add("summary", "School Term Time")
+            event.add("summary", f"School Term Time: {season}")
             event.add("dtstart", term["start"])
             # ICS all-day events: DTEND is exclusive, so add 1 day
             event.add("dtend", term["end"] + timedelta(days=1))
