@@ -1,8 +1,11 @@
+import logging
 import re
 from datetime import date, datetime
 
 import requests
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 URL = "https://www.nottinghamshire.gov.uk/education/school-holidays-and-closures/school-holiday-and-term-dates"
 
@@ -14,6 +17,7 @@ def scrape_term_dates() -> list[dict]:
     Returns a list of academic years, each containing a list of periods
     (terms and holidays) with start/end dates and type info.
     """
+    logger.debug("Fetching %s", URL)
     response = requests.get(
         URL,
         timeout=30,
@@ -23,9 +27,12 @@ def scrape_term_dates() -> list[dict]:
         },
     )
     response.raise_for_status()
+    logger.debug("Page fetched: %d bytes, status %d", len(response.text), response.status_code)
 
     soup = BeautifulSoup(response.text, "html.parser")
-    return parse_academic_years(soup)
+    results = parse_academic_years(soup)
+    logger.debug("Parsed %d academic years", len(results))
+    return results
 
 
 def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
@@ -34,6 +41,7 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
 
     # Each academic year is in a collapse div
     buttons = soup.find_all("button", class_="item-heading")
+    logger.debug("Found %d accordion buttons on page", len(buttons))
 
     for btn in buttons:
         title = btn.get_text(strip=True)
@@ -59,6 +67,15 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
 
         periods = parse_year_content(content_div, start_year, end_year)
         if periods:
+            logger.debug(
+                "  %s: %d periods (%d terms, %d half terms)",
+                title,
+                len(periods),
+                sum(1 for p in periods if p["type"] == "term"),
+                sum(1 for p in periods if p["type"] == "half_term"),
+            )
+            for p in periods:
+                logger.debug("    %s: %s to %s (%s)", p["type"], p["start"], p["end"], p.get("term_name", ""))
             academic_years.append(
                 {
                     "title": title,
