@@ -63,11 +63,20 @@ def compute_holidays(terms: list[dict], half_terms: list[dict], year_data: dict)
     # Half term holidays (explicitly listed on the page)
     for ht in half_terms:
         term_name = ht["term_name"].split(" ")[0]
+        start = ht["start"]
+        end = ht["end"]
+
+        # Extend to include surrounding weekend
+        if start.weekday() == 0:  # Monday → start on Saturday before
+            start = start - timedelta(days=2)
+        if end.weekday() == 4:  # Friday → end on Sunday after
+            end = end + timedelta(days=2)
+
         holidays.append(
             {
                 "name": f"{term_name} Half Term",
-                "start": ht["start"],
-                "end": ht["end"],
+                "start": start,
+                "end": end,
             }
         )
 
