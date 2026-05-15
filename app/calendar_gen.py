@@ -95,20 +95,7 @@ def compute_holidays(terms: list[dict], half_terms: list[dict], year_data: dict)
                 }
             )
 
-    # Summer holiday: after the last term of the year
-    if sorted_terms:
-        last_term = sorted_terms[-1]
-        # Summer holiday runs from day after last term ends until end of August
-        summer_start = last_term["end"] + timedelta(days=1)
-        summer_end = date(year_data["end_year"], 8, 31)
-        if summer_start <= summer_end:
-            holidays.append(
-                {
-                    "name": "Summer",
-                    "start": summer_start,
-                    "end": summer_end,
-                }
-            )
+    # No final summer holiday - we don't know when the next academic year starts
 
     return holidays
 
