@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 
 from app.scraper import scrape_term_dates
 from app.calendar_gen import generate_ics
@@ -33,6 +33,15 @@ def get_cached_ics() -> str:
     cache_meta.write_text(json.dumps({"timestamp": time.time()}))
 
     return ics_content
+
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return """<h1>Nottinghamshire School Term Dates</h1>
+<ul>
+<li><a href="/calendar.ics">/calendar.ics</a> - Subscribable ICS calendar</li>
+<li><a href="/health">/health</a> - Health check</li>
+</ul>"""
 
 
 @app.get("/calendar.ics")
