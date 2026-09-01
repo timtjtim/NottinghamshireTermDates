@@ -35,11 +35,37 @@ def scrape_term_dates() -> list[dict]:
     return results
 
 
+def extract_year_range_from_title(title: str) -> tuple[int, int] | None:
+    """Extract the start and end year from a title string like 'School term and holiday dates 2024 to 2025'."""
+    match = re.search(r"(\d{4})\s+to\s+(\d{4})", title)
+
+    if match:
+        return int(match.group(1)), int(match.group(2))
+
+    return None
+
 def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
     """Parse all academic year sections from the page."""
     academic_years = []
 
-    # Each academic year is in a collapse div
+    # Current academic year
+    title = soup.find("h2").get_text(strip=True) if soup.find("h2") else "Current Academic Year"
+
+    periods = parse_year_content(soup, "h3")
+
+    start_year, end_year = extract_year_range_from_title(title)
+
+    if periods:
+        academic_years.append(
+            {
+                "title": title,
+                "start_year": start_year,
+                "end_year": end_year,
+                "periods": periods,
+            }
+        )
+
+    # Each future academic year is in a collapse div
     buttons = soup.find_all("button", class_="item-heading")
     logger.debug("Found %d accordion buttons on page", len(buttons))
 
@@ -49,12 +75,9 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
             continue
 
         # Extract the year range from the title
-        year_match = re.search(r"(\d{4})\s+to\s+(\d{4})", title)
-        if not year_match:
+        start_year, end_year = extract_year_range_from_title(title)
+        if not start_year or not end_year:
             continue
-
-        start_year = int(year_match.group(1))
-        end_year = int(year_match.group(2))
 
         # Find the associated content panel
         target_id = (btn.get("data-bs-target") or "").lstrip("#")
@@ -65,17 +88,8 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
         if not content_div:
             continue
 
-        periods = parse_year_content(content_div, start_year, end_year)
+        periods = parse_year_content(content_div, "h4")
         if periods:
-            logger.debug(
-                "  %s: %d periods (%d terms, %d half terms)",
-                title,
-                len(periods),
-                sum(1 for p in periods if p["type"] == "term"),
-                sum(1 for p in periods if p["type"] == "half_term"),
-            )
-            for p in periods:
-                logger.debug("    %s: %s to %s (%s)", p["type"], p["start"], p["end"], p.get("term_name", ""))
             academic_years.append(
                 {
                     "title": title,
@@ -85,15 +99,25 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
                 }
             )
 
+    for academic_year in academic_years:
+        logger.debug(
+            "  %s: %d periods (%d terms, %d half terms)",
+            academic_year["title"],
+            len(academic_year["periods"]),
+            sum(1 for p in academic_year["periods"] if p["type"] == "term"),
+            sum(1 for p in academic_year["periods"] if p["type"] == "half_term"),
+        )
+        for p in academic_year["periods"]:
+            logger.debug("    %s: %s to %s (%s)", p["type"], p["start"], p["end"], p.get("term_name", ""))
+
+
     return academic_years
 
-
-def parse_year_content(content_div, start_year: int, end_year: int) -> list[dict]:
+def parse_year_content(soup, heading_level: str) -> list[dict]:
     """Parse the content of one academic year section into term/holiday periods."""
     periods = []
 
-    # Find all h3 headings for terms (Autumn, Spring, Summer)
-    headings = content_div.find_all("h4")
+    headings = soup.find_all(heading_level)
 
     for heading in headings:
         heading_text = heading.get_text(strip=True)
