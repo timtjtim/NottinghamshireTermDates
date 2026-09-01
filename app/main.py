@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+CACHE_ENABLED = os.environ.get("CACHE_ENABLED", "true").lower() == "true"
 CACHE_DIR = Path(os.environ.get("CACHE_DIR", "/app/cache"))
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_MAX_AGE = 86400  # 24 hours
@@ -24,7 +25,7 @@ def get_cached_ics() -> str:
     cache_file = CACHE_DIR / "calendar.ics"
     cache_meta = CACHE_DIR / "cache_meta.json"
 
-    if cache_file.exists() and cache_meta.exists():
+    if CACHE_ENABLED and cache_file.exists() and cache_meta.exists():
         meta = json.loads(cache_meta.read_text())
         age = time.time() - meta["timestamp"]
         if age < CACHE_MAX_AGE:
@@ -38,9 +39,10 @@ def get_cached_ics() -> str:
     logger.debug("Generating ICS calendar")
     ics_content = generate_ics(term_data)
 
-    cache_file.write_text(ics_content)
-    cache_meta.write_text(json.dumps({"timestamp": time.time()}))
-    logger.debug("Cache written to %s", cache_file)
+    if CACHE_ENABLED:
+        cache_file.write_text(ics_content)
+        cache_meta.write_text(json.dumps({"timestamp": time.time()}))
+        logger.debug("Cache written to %s", cache_file)
 
     return ics_content
 

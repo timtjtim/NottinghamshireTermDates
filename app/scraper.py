@@ -45,7 +45,7 @@ def parse_academic_years(soup: BeautifulSoup) -> list[dict]:
 
     for btn in buttons:
         title = btn.get_text(strip=True)
-        if "School term dates" not in title:
+        if "School term and holiday dates" not in title:
             continue
 
         # Extract the year range from the title
@@ -93,7 +93,7 @@ def parse_year_content(content_div, start_year: int, end_year: int) -> list[dict
     periods = []
 
     # Find all h3 headings for terms (Autumn, Spring, Summer)
-    headings = content_div.find_all("h3")
+    headings = content_div.find_all("h4")
 
     for heading in headings:
         heading_text = heading.get_text(strip=True)
